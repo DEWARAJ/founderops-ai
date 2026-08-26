@@ -29,6 +29,10 @@ founderops = "founderops.main:run"
 [tool.hatch.build.targets.wheel]
 packages = ["src/founderops"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"configs" = "founderops/configs"
+"static" = "founderops/static"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q --cov=founderops --cov-report=term-missing"

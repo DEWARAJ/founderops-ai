@@ -15,14 +15,15 @@ from founderops.workflow import CandidateWorkflow, InvalidTransition
 
 PACKAGE_ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = PACKAGE_ROOT.parents[1]
+RESOURCE_ROOT = PACKAGE_ROOT if (PACKAGE_ROOT / "configs").exists() else PROJECT_ROOT
 
 
 def create_app(database_path: Path | None = None) -> FastAPI:
     database = database_path or Path(
-        os.getenv("FOUNDEROPS_DB", PROJECT_ROOT / "data" / "founderops.db")
+        os.getenv("FOUNDEROPS_DB", Path.cwd() / "data" / "founderops.db")
     )
     repository = Repository(database)
-    rubric_path = PROJECT_ROOT / "configs" / "founders_initiatives.json"
+    rubric_path = RESOURCE_ROOT / "configs" / "founders_initiatives.json"
     provider = os.getenv("FOUNDEROPS_PROVIDER", "deterministic")
     if provider == "openai":
         api_key = os.getenv("OPENAI_API_KEY")
@@ -43,7 +44,7 @@ def create_app(database_path: Path | None = None) -> FastAPI:
     app.state.repository = repository
     app.state.workflow = workflow
 
-    static_dir = PROJECT_ROOT / "static"
+    static_dir = RESOURCE_ROOT / "static"
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
     @app.get("/", include_in_schema=False)
