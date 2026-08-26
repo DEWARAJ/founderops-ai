@@ -1,0 +1,36 @@
+{
+  "version": "2026-08-26.1",
+  "role": "Founders Initiatives — AI Agents",
+  "dimensions": [
+    {
+      "name": "software_engineering",
+      "weight": 0.30,
+      "target_matches": 4,
+      "keywords": ["Python", "TypeScript", "FastAPI", "Node.js", "PostgreSQL", "Redis", "Docker", "AWS"]
+    },
+    {
+      "name": "applied_ai",
+      "weight": 0.25,
+      "target_matches": 3,
+      "keywords": ["OpenAI", "Claude", "Gemini", "LLM", "evaluation", "agent"]
+    },
+    {
+      "name": "automation_integrations",
+      "weight": 0.20,
+      "target_matches": 3,
+      "keywords": ["n8n", "Zapier", "Salesforce", "HubSpot", "webhook", "API"]
+    },
+    {
+      "name": "startup_ownership",
+      "weight": 0.15,
+      "target_matches": 2,
+      "keywords": ["startup", "founder", "0→1", "0-to-1", "zero to one", "first hire", "owned"]
+    },
+    {
+      "name": "measurable_impact",
+      "weight": 0.10,
+      "target_matches": 2,
+      "keywords": ["reduced", "increased", "grew", "saved", "%", "revenue"]
+    }
+  ]
+}

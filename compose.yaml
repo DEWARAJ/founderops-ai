@@ -1,0 +1,12 @@
+services:
+  founderops:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - founderops-data:/app/data
+    environment:
+      FOUNDEROPS_PROVIDER: deterministic
+
+volumes:
+  founderops-data:
