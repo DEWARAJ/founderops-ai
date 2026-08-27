@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Annotated
 
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from founderops.documents import MAX_RESUME_BYTES, DocumentError, extract_resume_text
+from founderops.evaluation import EvaluationReport, evaluate, load_cases
 from founderops.extraction import DeterministicResumeExtractor, OpenAIResumeExtractor
 from founderops.models import AuditEvent, CandidateCreate, CandidateRecord, ReviewCreate
 from founderops.repository import Repository
@@ -18,6 +21,19 @@ PROJECT_ROOT = PACKAGE_ROOT.parents[1]
 RESOURCE_ROOT = PACKAGE_ROOT if (PACKAGE_ROOT / "configs").exists() else PROJECT_ROOT
 
 
+def build_extractor() -> DeterministicResumeExtractor | OpenAIResumeExtractor:
+    provider = os.getenv("FOUNDEROPS_PROVIDER", "deterministic")
+    if provider != "openai":
+        return DeterministicResumeExtractor()
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENAI_API_KEY is required when FOUNDEROPS_PROVIDER=openai")
+    return OpenAIResumeExtractor(
+        api_key=api_key,
+        model=os.getenv("OPENAI_MODEL", "gpt-5-mini"),
+    )
+
+
 def create_app(database_path: Path | None = None) -> FastAPI:
     database = database_path or Path(
         os.getenv("FOUNDEROPS_DB", Path.cwd() / "data" / "founderops.db")
@@ -25,20 +41,11 @@ def create_app(database_path: Path | None = None) -> FastAPI:
     repository = Repository(database)
     rubric_path = RESOURCE_ROOT / "configs" / "founders_initiatives.json"
     provider = os.getenv("FOUNDEROPS_PROVIDER", "deterministic")
-    if provider == "openai":
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise RuntimeError("OPENAI_API_KEY is required when FOUNDEROPS_PROVIDER=openai")
-        extractor = OpenAIResumeExtractor(
-            api_key=api_key, model=os.getenv("OPENAI_MODEL", "gpt-5-mini")
-        )
-    else:
-        extractor = DeterministicResumeExtractor()
-    workflow = CandidateWorkflow(repository, extractor, EvidenceScorer(rubric_path))
+    workflow = CandidateWorkflow(repository, build_extractor(), EvidenceScorer(rubric_path))
 
     app = FastAPI(
         title="FounderOps AI",
-        version="0.1.0",
+        version="0.2.0",
         description="Auditable candidate operations with evidence scoring and human approval.",
     )
     app.state.repository = repository
@@ -65,6 +72,37 @@ def create_app(database_path: Path | None = None) -> FastAPI:
         idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     ) -> CandidateRecord:
         return workflow.ingest(request, idempotency_key)
+
+    @app.post("/api/candidates/upload", response_model=CandidateRecord, status_code=201)
+    async def upload_candidate(
+        file: Annotated[UploadFile, File()],
+        name: Annotated[str, Form(min_length=1, max_length=120)],
+        role: Annotated[str, Form(min_length=1, max_length=160)],
+        source: Annotated[str, Form(max_length=80)] = "resume_upload",
+        idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    ) -> CandidateRecord:
+        content = await file.read(MAX_RESUME_BYTES + 1)
+        try:
+            resume_text = extract_resume_text(file.filename or "resume.txt", content)
+        except DocumentError as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
+        request = CandidateCreate(
+            name=name,
+            role=role,
+            resume_text=resume_text,
+            source=source,
+        )
+        return workflow.ingest(request, idempotency_key)
+
+    @app.get("/api/evaluations/benchmark", response_model=EvaluationReport)
+    def benchmark() -> EvaluationReport:
+        dataset_path = RESOURCE_ROOT / "evals" / "candidate_profiles.jsonl"
+        return evaluate(
+            DeterministicResumeExtractor(),
+            EvidenceScorer(rubric_path),
+            load_cases(dataset_path),
+            dataset_path.name,
+        )
 
     def require_candidate(candidate_id: str) -> CandidateRecord:
         candidate = repository.get_candidate(candidate_id)

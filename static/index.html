@@ -37,6 +37,20 @@
           <article class="safety-card"><span>DECISION MODE</span><strong>HITL</strong><small>human in the loop</small></article>
         </section>
 
+        <section class="benchmark" aria-label="Synthetic evaluation benchmark">
+          <div class="benchmark-heading">
+            <div><p class="eyebrow">EVALUATION HARNESS / SYNTHETIC BASELINE</p><h2>Quality you can inspect</h2></div>
+            <span id="benchmarkCases" class="benchmark-badge">10 LABELED CASES</span>
+          </div>
+          <div class="benchmark-metrics">
+            <div><strong id="benchmarkF1">—</strong><span>SKILL F1</span></div>
+            <div><strong id="benchmarkAgreement">—</strong><span>RECOMMENDATION AGREEMENT</span></div>
+            <div><strong id="benchmarkPii">—</strong><span>PII REDACTION PASS</span></div>
+            <div><strong id="benchmarkMae">—</strong><span>YEARS MAE</span></div>
+          </div>
+          <p id="benchmarkNote" class="benchmark-note">Loading the packaged reproducibility benchmark…</p>
+        </section>
+
         <section class="workspace">
           <div class="queue-panel">
             <div class="section-heading">
@@ -65,7 +79,9 @@
         </div>
         <label>Name<input name="name" value="Maya Chen" required /></label>
         <label>Target role<input name="role" value="Founders Initiatives — AI Agents" required /></label>
-        <label>Resume text<textarea name="resume_text" rows="12" required>Maya Chen
+        <label class="file-label">Resume file <span>TXT, PDF, or DOCX · max 5 MB</span><input name="resume_file" type="file" accept=".txt,.pdf,.docx" /></label>
+        <div class="form-divider"><span>OR PASTE RESUME TEXT</span></div>
+        <label>Resume text<textarea name="resume_text" rows="10">Maya Chen
 maya.chen@example.com · (415) 555-0188
 
 Software engineer with 3+ years building production systems at an early-stage startup.
@@ -74,7 +90,7 @@ Software engineer with 3+ years building production systems at an early-stage st
 - Reduced recruiter review time by 42% while preserving a mandatory human approval step.
 - Built LLM evaluations and audit logging; deployed services on AWS.
 - First engineering hire for an internal automation product and partnered directly with founders.</textarea></label>
-        <p class="form-note">Direct identifiers are redacted before extraction and scoring.</p>
+        <p class="form-note">Files are parsed locally. Direct identifiers are redacted before extraction and scoring.</p>
         <button class="primary-button" type="submit">Run evidence workflow →</button>
       </form>
     </dialog>

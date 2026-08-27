@@ -13,9 +13,11 @@ function notify(message) {
 }
 
 async function api(path, options = {}) {
+  const headers = { ...(options.headers || {}) };
+  if (!(options.body instanceof FormData)) headers["Content-Type"] = "application/json";
   const response = await fetch(path, {
     ...options,
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) }
+    headers
   });
   if (!response.ok) {
     const payload = await response.json();
@@ -25,6 +27,10 @@ async function api(path, options = {}) {
     throw new Error(detail || "Request failed");
   }
   return response.json();
+}
+
+function percentage(value) {
+  return `${Math.round(value * 100)}%`;
 }
 
 function escapeHtml(value) {
@@ -82,6 +88,16 @@ async function loadCandidates() {
   }
 }
 
+async function loadBenchmark() {
+  const report = await api("/api/evaluations/benchmark");
+  document.querySelector("#benchmarkF1").textContent = report.skill_f1.toFixed(3);
+  document.querySelector("#benchmarkAgreement").textContent = percentage(report.recommendation_agreement);
+  document.querySelector("#benchmarkPii").textContent = percentage(report.pii_redaction_rate);
+  document.querySelector("#benchmarkMae").textContent = report.years_mae.toFixed(1);
+  document.querySelector("#benchmarkCases").textContent = `${report.cases} LABELED CASES`;
+  document.querySelector("#benchmarkNote").textContent = report.note;
+}
+
 async function selectCandidate(id) {
   selectedId = id;
   renderList();
@@ -110,13 +126,35 @@ document.querySelector("#closeDialog").addEventListener("click", () => dialog.cl
 document.querySelector("#refresh").addEventListener("click", loadCandidates);
 form.addEventListener("submit", async event => {
   event.preventDefault();
-  const payload = Object.fromEntries(new FormData(form));
+  const formData = new FormData(form);
+  const file = formData.get("resume_file");
+  const resumeText = String(formData.get("resume_text") || "").trim();
   try {
-    const candidate = await api("/api/candidates", {
-      method: "POST",
-      headers: { "Idempotency-Key": crypto.randomUUID() },
-      body: JSON.stringify(payload)
-    });
+    let candidate;
+    if (file instanceof File && file.size > 0) {
+      const upload = new FormData();
+      upload.append("file", file);
+      upload.append("name", formData.get("name"));
+      upload.append("role", formData.get("role"));
+      upload.append("source", "dashboard_upload");
+      candidate = await api("/api/candidates/upload", {
+        method: "POST",
+        headers: { "Idempotency-Key": crypto.randomUUID() },
+        body: upload
+      });
+    } else {
+      if (!resumeText) throw new Error("Upload a resume file or paste resume text.");
+      candidate = await api("/api/candidates", {
+        method: "POST",
+        headers: { "Idempotency-Key": crypto.randomUUID() },
+        body: JSON.stringify({
+          name: formData.get("name"),
+          role: formData.get("role"),
+          resume_text: resumeText,
+          source: "dashboard_text"
+        })
+      });
+    }
     dialog.close();
     notify("Resume redacted, extracted, and scored");
     await loadCandidates();
@@ -124,4 +162,4 @@ form.addEventListener("submit", async event => {
   } catch (error) { notify(error.message); }
 });
 
-loadCandidates().catch(error => notify(error.message));
+Promise.all([loadCandidates(), loadBenchmark()]).catch(error => notify(error.message));

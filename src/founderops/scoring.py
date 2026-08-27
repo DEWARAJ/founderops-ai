@@ -58,11 +58,12 @@ class EvidenceScorer:
                 )
             )
         overall = round(sum(item.score * item.weight for item in dimensions), 1)
+        thresholds = self.rubric["recommendation_thresholds"]
         recommendation = (
             "strong_review"
-            if overall >= 75
+            if overall >= thresholds["strong_review"]
             else "review"
-            if overall >= 45
+            if overall >= thresholds["review"]
             else "insufficient_evidence"
         )
         return Scorecard(
