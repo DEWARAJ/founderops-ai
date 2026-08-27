@@ -42,6 +42,7 @@ function escapeHtml(value) {
 function updateMetrics() {
   document.querySelector("#metricQueue").textContent = candidates.filter(c => c.status === "pending_review").length;
   document.querySelector("#metricReviewed").textContent = candidates.filter(c => ["approved", "rejected", "outreach_drafted"].includes(c.status)).length;
+  document.querySelector("#metricVoice").textContent = candidates.filter(c => c.source.startsWith("retell_voice:")).length;
   document.querySelector("#metricOutreach").textContent = candidates.filter(c => c.status === "outreach_drafted").length;
 }
 

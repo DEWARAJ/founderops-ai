@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import FastAPI, File, Form, Header, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -13,6 +13,14 @@ from founderops.evaluation import EvaluationReport, evaluate, load_cases
 from founderops.extraction import DeterministicResumeExtractor, OpenAIResumeExtractor
 from founderops.models import AuditEvent, CandidateCreate, CandidateRecord, ReviewCreate
 from founderops.repository import Repository
+from founderops.retell import (
+    MAX_RETELL_WEBHOOK_BYTES,
+    RetellPayloadError,
+    RetellWebhookEvent,
+    RetellWebhookReceipt,
+    candidate_request_from_call,
+    verify_retell_signature,
+)
 from founderops.scoring import EvidenceScorer
 from founderops.workflow import CandidateWorkflow, InvalidTransition
 
@@ -45,7 +53,7 @@ def create_app(database_path: Path | None = None) -> FastAPI:
 
     app = FastAPI(
         title="FounderOps AI",
-        version="0.2.0",
+        version="0.3.0",
         description="Auditable candidate operations with evidence scoring and human approval.",
     )
     app.state.repository = repository
@@ -102,6 +110,84 @@ def create_app(database_path: Path | None = None) -> FastAPI:
             EvidenceScorer(rubric_path),
             load_cases(dataset_path),
             dataset_path.name,
+        )
+
+    @app.post(
+        "/api/integrations/retell/webhook",
+        response_model=RetellWebhookReceipt,
+        status_code=202,
+    )
+    async def retell_webhook(
+        request: Request,
+        x_retell_signature: str | None = Header(default=None, alias="X-Retell-Signature"),
+    ) -> RetellWebhookReceipt:
+        raw_body = await request.body()
+        if len(raw_body) > MAX_RETELL_WEBHOOK_BYTES:
+            raise HTTPException(status_code=413, detail="Retell webhook exceeds the 1 MB limit.")
+        api_key = os.getenv("RETELL_WEBHOOK_API_KEY")
+        if not api_key:
+            raise HTTPException(
+                status_code=503,
+                detail="Retell webhook verification is not configured.",
+            )
+        if not verify_retell_signature(raw_body, api_key, x_retell_signature):
+            raise HTTPException(status_code=401, detail="Invalid or expired Retell signature.")
+        try:
+            event = RetellWebhookEvent.model_validate_json(raw_body)
+        except ValueError as error:
+            raise HTTPException(
+                status_code=422,
+                detail="Invalid Retell webhook payload.",
+            ) from error
+
+        if event.event != "call_analyzed":
+            return RetellWebhookReceipt(
+                action="ignored",
+                event=event.event,
+                call_id=event.call.call_id,
+                message="Acknowledged; only call_analyzed events create candidate evidence.",
+            )
+
+        idempotency_key = f"retell:{event.event}:{event.call.call_id}"
+        existing_id = repository.lookup_idempotency_key(idempotency_key)
+        if existing_id:
+            return RetellWebhookReceipt(
+                action="duplicate",
+                event=event.event,
+                call_id=event.call.call_id,
+                candidate_id=existing_id,
+                message="Webhook retry acknowledged; the call was already processed.",
+            )
+        try:
+            candidate_request = candidate_request_from_call(event.call)
+        except RetellPayloadError as error:
+            return RetellWebhookReceipt(
+                action="ignored",
+                event=event.event,
+                call_id=event.call.call_id,
+                message=str(error),
+            )
+
+        candidate = workflow.ingest(candidate_request, idempotency_key)
+        repository.add_audit(
+            candidate.id,
+            "retell_call_ingested",
+            "retell_webhook",
+            {
+                "call_id": event.call.call_id,
+                "event": event.event,
+                "duration_ms": event.call.duration_ms,
+                "disconnection_reason": event.call.disconnection_reason,
+                "candidate_turns_only": True,
+                "transcript_persisted": False,
+            },
+        )
+        return RetellWebhookReceipt(
+            action="candidate_created",
+            event=event.event,
+            call_id=event.call.call_id,
+            candidate_id=candidate.id,
+            message="Candidate evidence created from user utterances and queued for human review.",
         )
 
     def require_candidate(candidate_id: str) -> CandidateRecord:

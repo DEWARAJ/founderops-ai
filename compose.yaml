@@ -7,6 +7,7 @@ services:
       - founderops-data:/app/data
     environment:
       FOUNDEROPS_PROVIDER: deterministic
+      RETELL_WEBHOOK_API_KEY: ${RETELL_WEBHOOK_API_KEY:-}
 
 volumes:
   founderops-data:

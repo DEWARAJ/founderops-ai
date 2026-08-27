@@ -27,11 +27,12 @@ button { cursor: pointer; }
 h1 { margin: 0; font-size: clamp(52px, 7vw, 104px); line-height: .89; letter-spacing: -.065em; }
 h1 span { color: var(--violet); }
 .hero-copy { margin: 0; max-width: 510px; font-size: 17px; line-height: 1.65; }
-.metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--ink); background: var(--ink); gap: 1px; }
+.metric-grid { display: grid; grid-template-columns: repeat(5, 1fr); border: 1px solid var(--ink); background: var(--ink); gap: 1px; }
 .metric-grid article { background: var(--panel); padding: 24px; min-height: 145px; display: flex; flex-direction: column; }
 .metric-grid span, .metric-grid small { font: 500 10px "DM Mono"; color: var(--muted); letter-spacing: .08em; }
 .metric-grid strong { margin: auto 0 4px; font-size: 42px; letter-spacing: -.04em; }
 .metric-grid .safety-card { background: var(--acid); }
+.metric-grid .voice-card strong { color: var(--violet); }
 .benchmark { margin-top: 28px; border: 1px solid var(--ink); background: var(--panel); }
 .benchmark-heading { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 22px 24px; border-bottom: 1px solid var(--line); }
 .benchmark-badge { flex: none; padding: 7px 10px; background: #ece9ff; color: var(--violet); font: 500 10px "DM Mono"; letter-spacing: .07em; }
@@ -92,6 +93,7 @@ dialog .primary-button { margin: 0 24px; width: calc(100% - 48px); }
   .system-state { display: none; }
   .hero { grid-template-columns: 1fr; gap: 30px; padding-top: 50px; }
   .metric-grid { grid-template-columns: 1fr 1fr; }
+  .metric-grid .safety-card { grid-column: span 2; }
   .benchmark-heading { align-items: start; }
   .benchmark-metrics { grid-template-columns: 1fr 1fr; }
   .benchmark-metrics div:nth-child(2) { border-right: 0; }

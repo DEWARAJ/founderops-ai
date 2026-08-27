@@ -6,6 +6,7 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY src ./src
 COPY configs ./configs
+COPY evals ./evals
 COPY static ./static
 RUN pip install --no-cache-dir .
 

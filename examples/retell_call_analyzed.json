@@ -1,0 +1,48 @@
+{
+  "event": "call_analyzed",
+  "call": {
+    "call_type": "web_call",
+    "call_id": "call_portfolio_001",
+    "agent_id": "agent_founderops_demo",
+    "call_status": "ended",
+    "metadata": {
+      "candidate_name": "Maya Patel",
+      "target_role": "Founders Initiatives — AI Agents"
+    },
+    "duration_ms": 184000,
+    "disconnection_reason": "user_hangup",
+    "opt_out_sensitive_data_storage": true,
+    "transcript": "Agent: Tell me about Python, OpenAI, and HubSpot experience.\nUser: I am maya@example.com and my number is (415) 555-0188. I have 4 years building TypeScript and Node.js systems.\nAgent: What did you own?\nUser: At an early-stage startup, I owned a zero to one platform using PostgreSQL, Redis, Docker, and AWS.\nAgent: What was the result?\nUser: I reduced processing time by 38% and saved the operations team 20 hours every week.",
+    "transcript_object": [
+      {
+        "role": "agent",
+        "content": "Tell me about Python, OpenAI, and HubSpot experience."
+      },
+      {
+        "role": "user",
+        "content": "I am maya@example.com and my number is (415) 555-0188. I have 4 years building TypeScript and Node.js systems."
+      },
+      {
+        "role": "agent",
+        "content": "What did you own?"
+      },
+      {
+        "role": "user",
+        "content": "At an early-stage startup, I owned a zero to one platform using PostgreSQL, Redis, Docker, and AWS."
+      },
+      {
+        "role": "agent",
+        "content": "What was the result?"
+      },
+      {
+        "role": "user",
+        "content": "I reduced processing time by 38% and saved the operations team 20 hours every week."
+      }
+    ],
+    "call_analysis": {
+      "call_summary": "Candidate described engineering ownership and measurable impact.",
+      "call_successful": true,
+      "custom_analysis_data": {}
+    }
+  }
+}

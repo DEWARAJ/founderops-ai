@@ -5,3 +5,4 @@ The PNG files in this folder are captured from the running local application usi
 - `dashboard.png` — live synthetic benchmark and operating dashboard
 - `candidate-intake.png` — privacy-aware TXT/PDF/DOCX and text intake modal
 - `evidence-review.png` — explainable scorecard with the mandatory human decision gate
+- `retell-voice-intake.png` — verified Retell call represented as candidate-only evidence
